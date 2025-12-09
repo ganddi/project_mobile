@@ -18,33 +18,64 @@ class DatabaseHelper {
   }
 
   Future<Database> _initDatabase() async {
-    String path = join(await getDatabasesPath(), 'spotify_clone.db');
+    String path = join(await getDatabasesPath(), 'spotify_clone_v2.db'); // Ganti nama file biar fresh
     
-    // GANTI VERSION JADI 2 (Supaya memaksa update jika tidak uninstall)
     return await openDatabase(
       path,
-      version: 2, 
-      onCreate: (db, version) {
-        return db.execute(
+      version: 1, // Kita mulai dari versi 1 lagi tapi dengan nama file baru
+      onCreate: (db, version) async {
+        print("--- MEMBUAT TABEL BARU ---");
+        await db.execute(
           'CREATE TABLE playlists(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, subtitle TEXT)',
         );
-      },
-      // Tambahkan onUpgrade untuk jaga-jaga
-      onUpgrade: (db, oldVersion, newVersion) {
-        if (oldVersion < 2) {
-           db.execute('CREATE TABLE playlists(id INTEGER PRIMARY KEY AUTOINCREMENT, title TEXT, subtitle TEXT)');
-        }
       },
     );
   }
 
   Future<int> insertPlaylist(Map<String, dynamic> row) async {
     Database db = await database;
-    return await db.insert('playlists', row);
+    try {
+      int id = await db.insert('playlists', row);
+      print("--- DATA BERHASIL DISIMPAN ID: $id ---"); // Log sukses
+      return id;
+    } catch (e) {
+      print("--- ERROR SAAT INSERT: $e ---"); // Log error
+      return 0;
+    }
   }
 
   Future<List<Map<String, dynamic>>> getPlaylists() async {
     Database db = await database;
-    return await db.query('playlists');
+    try {
+      var result = await db.query('playlists');
+      print("--- DATA DIAMBIL: ${result.length} item ---");
+      return result;
+    } catch (e) {
+      print("--- ERROR SAAT GET: $e ---");
+      return [];
+    }
   }
+
+Future<int> deletePlaylist(int id) async {
+    final db = await database;
+    return await db.delete(
+      'playlists',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
+Future<int> updatePlaylist(int id, String newTitle) async {
+    final db = await database;
+    return await db.update(
+      'playlists',
+      {'title': newTitle}, // Kolom yang diubah
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+  }
+
 }
+
+
+

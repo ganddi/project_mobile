@@ -48,27 +48,38 @@ class _PustakaState extends State<Pustaka> {
 
   // Fungsi ambil data dari Database
   void _refreshData() async {
+    print("--- MULAI REFRESH DATA ---");
     try {
+      // 1. Ambil data
       final dataFromDB = await DatabaseHelper().getPlaylists();
+      print(
+        "Data mentah dari DB: $dataFromDB",
+      ); // Cek apakah list-nya kosong [] atau ada isinya
 
+      // 2. Konversi
       List<Map<String, dynamic>> convertedDBData = dataFromDB.map((e) {
         return {
+          'id': e['id'], // <--- PENTING: Ambil ID dari database
           'type': 'playlist',
           'image': 'https://misc.scdn.co/liked-songs/liked-songs-300.png',
           'title': e['title'],
           'subtitle': 'Playlist • ${e['subtitle']}',
-          'isUserCreated': true,
+          'isUserCreated': true, // Penanda kalau ini bisa dihapus
         };
       }).toList();
 
+      print("Data setelah dikonversi: ${convertedDBData.length} item");
+
+      // 3. Update UI
       if (mounted) {
         setState(() {
-          // Gabungkan Data Statis + Data Database
-          _libraryItems = [..._defaultItems, ...convertedDBData];
+          // Kita taruh data DB di PALING ATAS (index 0) supaya terlihat jelas
+          _libraryItems = [...convertedDBData, ..._defaultItems];
         });
+        print("--- UI BERHASIL DI-UPDATE ---");
       }
     } catch (e) {
-      print("Error ambil data: $e");
+      print("--- ERROR FATAL SAAT REFRESH: $e ---");
     }
   }
 
@@ -94,6 +105,9 @@ class _PustakaState extends State<Pustaka> {
               enabledBorder: UnderlineInputBorder(
                 borderSide: BorderSide(color: Colors.green),
               ),
+              focusedBorder: UnderlineInputBorder(
+                borderSide: BorderSide(color: Colors.green),
+              ), // Biar fokus juga hijau
             ),
             autofocus: true,
           ),
@@ -107,14 +121,27 @@ class _PustakaState extends State<Pustaka> {
             ),
             TextButton(
               onPressed: () async {
+                print("Tombol Create Ditekan!"); // 1. Cek tombol
+
                 if (titleController.text.isNotEmpty) {
+                  print("Input Text: ${titleController.text}"); // 2. Cek input
+
                   // Simpan ke Database
                   await DatabaseHelper().insertPlaylist({
                     'title': titleController.text,
                     'subtitle': 'User Playlist',
                   });
-                  _refreshData(); // Refresh tampilan
+
+                  print(
+                    "Proses Insert Selesai, Refreshing UI...",
+                  ); // 3. Cek insert
+
+                  // Refresh tampilan
+                  _refreshData();
+
                   if (mounted) Navigator.pop(context);
+                } else {
+                  print("Text Kosong, tidak menyimpan.");
                 }
               },
               child: const Text(
@@ -204,7 +231,7 @@ class _PustakaState extends State<Pustaka> {
         children: [
           _buildFilterChips(),
           const SizedBox(height: 12),
-          _buildRecentsHeader(),
+          // _buildRecentsHeader(),
           Expanded(
             child: ListView.builder(
               padding: const EdgeInsets.symmetric(horizontal: 12.0),
@@ -218,11 +245,10 @@ class _PustakaState extends State<Pustaka> {
                     title: item['title'] ?? 'No Title',
                     subtitle: item['subtitle'] ?? '',
                     pinned: item['pinned'] ?? false,
-                  );
-                } else {
-                  return _buildArtistItem(
-                    imageUrl: item['image'] ?? '',
-                    name: item['name'] ?? 'Unknown',
+
+                    // TAMBAHKAN DUA BARIS INI:
+                    isUserCreated: item['isUserCreated'] ?? false,
+                    id: item['id'],
                   );
                 }
               },
@@ -276,29 +302,90 @@ class _PustakaState extends State<Pustaka> {
     );
   }
 
-  Widget _buildRecentsHeader() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 12.0, vertical: 8.0),
-      child: Row(
-        children: const [
-          Icon(Icons.swap_vert, size: 20),
-          SizedBox(width: 8),
-          Text('Recents', style: TextStyle(fontWeight: FontWeight.w600)),
-        ],
-      ),
-    );
-  }
+void _showRenameDialog(int id, String currentTitle) {
+      final titleController = TextEditingController(
+        text: currentTitle,
+      ); // Isi nama lama
+
+      showDialog(
+        context: context,
+        builder: (context) {
+          return AlertDialog(
+            backgroundColor: Colors.grey[900],
+            title: const Text(
+              'Rename Playlist',
+              style: TextStyle(color: Colors.white),
+            ),
+            content: TextField(
+              controller: titleController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                hintText: 'New playlist name',
+                hintStyle: TextStyle(color: Colors.grey),
+                enabledBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.green),
+                ),
+                focusedBorder: UnderlineInputBorder(
+                  borderSide: BorderSide(color: Colors.green),
+                ),
+              ),
+              autofocus: true,
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text(
+                  'Cancel',
+                  style: TextStyle(color: Colors.white),
+                ),
+              ),
+              TextButton(
+                onPressed: () async {
+                  if (titleController.text.isNotEmpty) {
+                    // Panggil fungsi Update di Database
+                    await DatabaseHelper().updatePlaylist(
+                      id,
+                      titleController.text,
+                    );
+
+                    // Refresh UI
+                    _refreshData();
+
+                    if (mounted) Navigator.pop(context); // Tutup dialog
+
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Playlist renamed!')),
+                    );
+                  }
+                },
+                child: const Text(
+                  'Save',
+                  style: TextStyle(
+                    color: Colors.green,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      );
+    }
 
   Widget _buildPlaylistItem({
-    required String imageUrl,
     required String title,
     required String subtitle,
+    required String imageUrl,
     bool pinned = false,
+    bool isUserCreated =
+        false, // Parameter baru untuk cek apakah ini buatan user
+    int? id, // Parameter baru untuk ID
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Row(
         children: [
+          // Gambar
           Container(
             width: 64,
             height: 64,
@@ -311,6 +398,7 @@ class _PustakaState extends State<Pustaka> {
             ),
           ),
           const SizedBox(width: 16),
+          // Teks Judul & Subtitle
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -335,45 +423,104 @@ class _PustakaState extends State<Pustaka> {
                         ),
                       ),
                     if (pinned) const SizedBox(width: 4),
-                    Text(
-                      subtitle,
-                      style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                    Expanded(
+                      child: Text(
+                        subtitle,
+                        style: TextStyle(color: Colors.white.withOpacity(0.7)),
+                        overflow: TextOverflow.ellipsis,
+                      ),
                     ),
                   ],
                 ),
               ],
             ),
           ),
+
+          // --- BAGIAN INI YANG DIUBAH (TITIK TIGA JADI MENU) ---
+         if (isUserCreated)
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert, color: Colors.grey),
+              onSelected: (value) {
+                if (id != null) {
+                  if (value == 'rename') {
+                    // Panggil fungsi Rename
+                    _showRenameDialog(id, title);
+                  } else if (value == 'delete') {
+                    // Panggil fungsi Delete
+                    _deletePlaylist(id, title);
+                  }
+                }
+              },
+              itemBuilder: (BuildContext context) => <PopupMenuEntry<String>>[
+                // MENU 1: RENAME (DI ATAS)
+                const PopupMenuItem<String>(
+                  value: 'rename',
+                  child: Row(
+                    children: [
+                      Icon(Icons.edit, color: Colors.white),
+                      SizedBox(width: 8),
+                      Text('Rename', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+                // MENU 2: DELETE (DI BAWAH)
+                const PopupMenuItem<String>(
+                  value: 'delete',
+                  child: Row(
+                    children: [
+                      Icon(Icons.delete, color: Colors.red), // Merah biar kontras
+                      SizedBox(width: 8),
+                      Text('Delete playlist', style: TextStyle(color: Colors.white)),
+                    ],
+                  ),
+                ),
+              ],
+            )
+          else
+            const Icon(Icons.more_vert, color: Colors.grey),
         ],
       ),
     );
   }
 
-  Widget _buildArtistItem({required String imageUrl, required String name}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Row(
-        children: [
-          CircleAvatar(backgroundImage: NetworkImage(imageUrl), radius: 32),
-          const SizedBox(width: 16),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                name,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              Text(
-                'Artist',
-                style: TextStyle(color: Colors.white.withOpacity(0.7)),
-              ),
-            ],
+  void _deletePlaylist(int id, String title) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: Colors.grey[900],
+        title: const Text(
+          'Delete Playlist?',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: Text(
+          'Are you sure you want to delete "$title"?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context), // Batal
+            child: const Text('Cancel', style: TextStyle(color: Colors.white)),
+          ),
+          TextButton(
+            onPressed: () async {
+              // Hapus dari DB
+              await DatabaseHelper().deletePlaylist(id);
+              // Tutup dialog
+              if (mounted) Navigator.pop(context);
+              // Refresh UI
+              _refreshData();
+
+              // Tampilkan pesan sukses
+              ScaffoldMessenger.of(
+                context,
+              ).showSnackBar(SnackBar(content: Text('Deleted "$title"')));
+            },
+            child: const Text('Delete', style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
     );
+    
+    
   }
 }

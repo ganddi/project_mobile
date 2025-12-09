@@ -2,10 +2,22 @@ import 'package:flutter/material.dart';
 import 'package:project_uas/beranda.dart';
 import 'package:project_uas/pencarian.dart';
 import 'package:project_uas/pustaka.dart';
-import 'package:project_uas/login_page.dart'; // IMPORT BARU
-import 'package:project_uas/auth_service.dart'; // IMPORT BARU
+import 'package:project_uas/login_page.dart';
+import 'package:project_uas/auth_service.dart';
+import 'dart:io'; // Untuk cek Platform (Windows/Android)
+import 'package:sqflite_common_ffi/sqflite_ffi.dart'; // Untuk database Windows
 
 void main() {
+  // --- TAMBAHKAN KODE INI ---
+  // Cek jika aplikasi berjalan di Desktop (Windows/Linux/Mac)
+  if (Platform.isWindows || Platform.isLinux || Platform.isMacOS) {
+    // Inisialisasi database ffi
+    sqfliteFfiInit();
+    // Set database factory ke versi ffi
+    databaseFactory = databaseFactoryFfi;
+  }
+  // ---------------------------
+
   runApp(const AplikasiMusik());
 }
 
@@ -105,16 +117,16 @@ class _MainPageState extends State<MainPage> {
   }
 
   // Tambahkan fungsi logout (opsional, bisa ditaruh di tombol profile)
-  void _logout() async {
-    final authService = AuthService();
-    await authService.logout();
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
-      );
-    }
-  }
+  // void _logout() async {
+  //   final authService = AuthService();
+  //   await authService.logout();
+  //   if (mounted) {
+  //     Navigator.pushReplacement(
+  //       context,
+  //       MaterialPageRoute(builder: (context) => const LoginPage()),
+  //     );
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {

@@ -21,9 +21,6 @@ class _LoginPageState extends State<LoginPage> {
       _isLoading = true;
     });
 
-    // Simulasi input (karena reqres.in butuh email spesifik ini untuk sukses)
-    // Email: eve.holt@reqres.in
-    // Pass: cityslicka
     final email = _emailController.text;
     final password = _passwordController.text;
 
@@ -46,7 +43,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Login Failed. Use eve.holt@reqres.in / cityslicka'),
+            content: Text('Login Failed.'),
             backgroundColor: Colors.red,
           ),
         );

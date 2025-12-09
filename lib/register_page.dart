@@ -29,8 +29,6 @@ class _RegisterPageState extends State<RegisterPage> {
       _isLoading = true;
     });
 
-    // Simulasi Register reqres.in
-    // Email yang berhasil: eve.holt@reqres.in
     final email = _emailController.text;
     final password = _passwordController.text;
 
@@ -54,7 +52,7 @@ class _RegisterPageState extends State<RegisterPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('Registration Failed. Use eve.holt@reqres.in'),
+            content: Text('Registration Failed'),
             backgroundColor: Colors.red,
           ),
         );
