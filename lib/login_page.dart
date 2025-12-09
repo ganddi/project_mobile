@@ -1,8 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:project_uas/auth_service.dart';
-import 'package:project_uas/beranda.dart';
-import 'package:project_uas/register_page.dart';
 import 'package:project_uas/main.dart'; 
+import 'package:project_uas/register_page.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -39,7 +38,7 @@ class _LoginPageState extends State<LoginPage> {
       if (mounted) {
         Navigator.pushReplacement(
           context,
-          MaterialPageRoute(builder: (context) => const HalamanBeranda()),
+          MaterialPageRoute(builder: (context) => const MainPage()),
         );
       }
     } else {
@@ -85,9 +84,7 @@ class _LoginPageState extends State<LoginPage> {
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
               ),
             ),
             const SizedBox(height: 16),
@@ -100,9 +97,7 @@ class _LoginPageState extends State<LoginPage> {
                 labelStyle: const TextStyle(color: Colors.grey),
                 filled: true,
                 fillColor: Colors.grey[850],
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(5),
-                ),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(5)),
               ),
             ),
             const SizedBox(height: 30),
@@ -126,32 +121,25 @@ class _LoginPageState extends State<LoginPage> {
                       ),
                     ),
             ),
-
-            // ... Kode sebelumnya (TextField, ElevatedButton Login) ...
             const SizedBox(height: 20),
-
+            
             // --- TAMBAHAN KODE REGISTER ---
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Text(
-                  "Don't have an account? ",
-                  style: TextStyle(color: Colors.grey),
-                ),
+                const Text("Don't have an account? ", style: TextStyle(color: Colors.grey)),
                 GestureDetector(
                   onTap: () {
                     // Pindah ke halaman Register
                     Navigator.push(
                       context,
-                      MaterialPageRoute(
-                        builder: (context) => const RegisterPage(),
-                      ),
+                      MaterialPageRoute(builder: (context) => const RegisterPage()),
                     );
                   },
                   child: const Text(
                     "Sign up",
                     style: TextStyle(
-                      color: Colors.white,
+                      color: Colors.white, 
                       fontWeight: FontWeight.bold,
                       decoration: TextDecoration.underline,
                     ),
@@ -159,7 +147,6 @@ class _LoginPageState extends State<LoginPage> {
                 ),
               ],
             ),
-            // ... Penutup Column, Padding, Scaffold ...
           ],
         ),
       ),
